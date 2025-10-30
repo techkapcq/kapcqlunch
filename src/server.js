@@ -2,7 +2,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dayjs from 'dayjs';
-import { getDatabase } from './storage/db.js';
+import { getSignups, addSignup, removeSignup, getPasscode as storeGetPasscode, setPasscode as storeSetPasscode } from './storage/store.js';
 import cookieParser from 'cookie-parser';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -19,11 +19,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/public', express.static(path.join(__dirname, '..', 'public')));
 app.use(cookieParser(COOKIE_SECRET));
 
-const db = getDatabase(path.join(__dirname, '..', 'storage', 'data.db'));
-
 function getPasscode() {
-  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get('passcode');
-  return row ? String(row.value) : '0000';
+  return storeGetPasscode();
 }
 
 function requirePasscode(req, res, next) {
@@ -38,57 +35,46 @@ app.get('/passcode', (req, res) => {
   res.render('passcode', { error });
 });
 
-app.post('/passcode', (req, res) => {
+app.post('/passcode', async (req, res) => {
   const input = (req.body.passcode || '').trim();
-  if (input && input === getPasscode()) {
+  const code = await getPasscode();
+  if (input && input === code) {
     res.cookie('pass_ok', '1', { signed: true, httpOnly: true, sameSite: 'lax' });
     return res.redirect('/');
   }
   return res.redirect('/passcode?error=1');
 });
 
-app.get('/', requirePasscode, (req, res) => {
+app.get('/', requirePasscode, async (req, res) => {
   const today = dayjs().format('YYYY-MM-DD');
-  const signups = db
-    .prepare('SELECT id, name, created_at FROM signups WHERE signup_date = ? ORDER BY created_at ASC')
-    .all(today);
+  const rows = await getSignups(today);
 
   res.render('index', {
     today,
-    signups,
+    signups: rows,
   });
 });
 
-app.post('/signup', requirePasscode, (req, res) => {
+app.post('/signup', requirePasscode, async (req, res) => {
   const nameRaw = (req.body.name || '').trim();
   if (!nameRaw) {
     return res.redirect('/');
   }
   const name = nameRaw.slice(0, 100);
   const today = dayjs().format('YYYY-MM-DD');
-
-  const existing = db
-    .prepare('SELECT id FROM signups WHERE signup_date = ? AND LOWER(name) = LOWER(?)')
-    .get(today, name);
-  if (!existing) {
-    db
-      .prepare('INSERT INTO signups (signup_date, name, created_at) VALUES (?, ?, ?)')
-      .run(today, name, dayjs().toISOString());
-  }
+  await addSignup(today, name, dayjs().toISOString());
 
   res.redirect('/');
 });
 
-app.post('/remove', requirePasscode, (req, res) => {
+app.post('/remove', requirePasscode, async (req, res) => {
   const nameRaw = (req.body.name || '').trim();
   if (!nameRaw) {
     return res.redirect('/');
   }
   const name = nameRaw.slice(0, 100);
   const today = dayjs().format('YYYY-MM-DD');
-  db
-    .prepare('DELETE FROM signups WHERE signup_date = ? AND LOWER(name) = LOWER(?)')
-    .run(today, name);
+  await removeSignup(today, name);
   res.redirect('/');
 });
 
@@ -98,18 +84,17 @@ app.get('/admin', requirePasscode, (req, res) => {
   res.render('admin', { ok, err });
 });
 
-app.post('/admin', requirePasscode, (req, res) => {
+app.post('/admin', requirePasscode, async (req, res) => {
   const current = (req.body.current_passcode || '').trim();
   const next = (req.body.new_passcode || '').trim();
   if (!current || !next) {
     return res.redirect('/admin?err=1');
   }
-  const now = getPasscode();
+  const now = await getPasscode();
   if (current !== now) {
     return res.redirect('/admin?err=1');
   }
-  db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value')
-    .run('passcode', next);
+  await storeSetPasscode(next);
   return res.redirect('/admin?ok=1');
 });
 
