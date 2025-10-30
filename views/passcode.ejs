@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>접속 코드 입력</title>
+    <link rel="stylesheet" href="/public/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <section>
+        <h2>접속 코드가 필요합니다</h2>
+        <% if (error) { %>
+          <p class="muted" style="color:#ef4444">코드가 올바르지 않습니다.</p>
+        <% } %>
+        <form method="post" action="/passcode" class="row mt">
+          <input type="password" name="passcode" placeholder="패스코드" required maxlength="100" />
+          <button type="submit">확인</button>
+        </form>
+      </section>
+    </main>
+  </body>
+  </html>
+
+

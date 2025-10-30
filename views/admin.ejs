@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>관리자 - 패스코드 변경</title>
+    <link rel="stylesheet" href="/public/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <h1>관리자</h1>
+        <p class="sub">패스코드 변경</p>
+      </header>
+
+      <section>
+        <% if (ok) { %>
+          <p style="color:#22c55e">패스코드가 업데이트되었습니다.</p>
+        <% } %>
+        <% if (err) { %>
+          <p style="color:#ef4444">입력 값이 올바르지 않습니다. (현재 코드 확인)</p>
+        <% } %>
+        <form method="post" action="/admin" class="mt">
+          <div class="mt">
+            <label>현재 패스코드</label>
+            <input type="password" name="current_passcode" required maxlength="100" />
+          </div>
+          <div class="mt">
+            <label>새 패스코드</label>
+            <input type="password" name="new_passcode" required maxlength="100" />
+          </div>
+          <div class="mt">
+            <button type="submit">변경</button>
+            <a href="/" class="muted" style="margin-left:8px">돌아가기</a>
+          </div>
+        </form>
+      </section>
+    </main>
+  </body>
+  </html>
+
+

@@ -1,0 +1,22 @@
+:root { --bg:#0b0c10; --panel:#151922; --text:#e6e6e6; --muted:#9aa3af; --accent:#4f46e5; --accent-2:#22c55e; --danger:#ef4444; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Ubuntu, Cantarell, Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+.container { max-width: 760px; margin: 0 auto; padding: 24px; }
+header { margin-bottom: 16px; }
+h1 { margin: 0 0 4px 0; font-size: 28px; }
+.sub { margin: 0; color: var(--muted); }
+section { background: var(--panel); border: 1px solid #222533; border-radius: 12px; padding: 16px; margin-top: 16px; }
+h2 { margin: 0 0 12px 0; font-size: 18px; }
+.row { display: flex; gap: 8px; }
+input[type="text"] { flex: 1; padding: 10px 12px; border-radius: 8px; border: 1px solid #30364a; background: #0f1420; color: var(--text); }
+button { padding: 10px 14px; border-radius: 8px; border: 1px solid #313a6b; background: linear-gradient(180deg, #5a68ff, #4f46e5); color: white; cursor: pointer; font-weight: 600; }
+button.secondary { background: transparent; border-color: #3a415f; color: var(--muted); }
+.mt { margin-top: 8px; }
+.mt-sm { margin-top: 6px; }
+.muted { color: var(--muted); }
+ol.names { margin: 0; padding-left: 20px; }
+.name { font-weight: 600; }
+details { color: var(--muted); }
+footer { text-align: center; margin-top: 16px; color: var(--muted); }
+
+
