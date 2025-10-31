@@ -1,7 +1,5 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { kv } from '@vercel/kv';
-import { getDatabase } from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,15 +12,29 @@ function keySignups(dateStr) {
 }
 const keyPasscode = 'settings:passcode';
 
-// SQLite DB for local/dev
+// Lazy-loaded backends to avoid bundling native modules on Vercel
+let kvClient = null;
 let sqliteDb = null;
-if (!useKV) {
-  sqliteDb = getDatabase(path.join(__dirname, '..', '..', 'storage', 'data.db'));
+
+async function ensureBackend() {
+  if (useKV) {
+    if (!kvClient) {
+      const mod = await import('@vercel/kv');
+      kvClient = mod.kv;
+    }
+    return { kind: 'kv' };
+  }
+  if (!sqliteDb) {
+    const mod = await import('./db.js');
+    sqliteDb = mod.getDatabase(path.join(__dirname, '..', '..', 'storage', 'data.db'));
+  }
+  return { kind: 'sqlite' };
 }
 
 export async function getSignups(dateStr) {
-  if (useKV) {
-    const members = await kv.smembers(keySignups(dateStr));
+  const b = await ensureBackend();
+  if (b.kind === 'kv') {
+    const members = await kvClient.smembers(keySignups(dateStr));
     return members.map(name => ({ name, created_at: null }));
   }
   const rows = sqliteDb
@@ -32,8 +44,9 @@ export async function getSignups(dateStr) {
 }
 
 export async function addSignup(dateStr, name, createdAtIso) {
-  if (useKV) {
-    await kv.sadd(keySignups(dateStr), name);
+  const b = await ensureBackend();
+  if (b.kind === 'kv') {
+    await kvClient.sadd(keySignups(dateStr), name);
     return;
   }
   const existing = sqliteDb
@@ -47,8 +60,9 @@ export async function addSignup(dateStr, name, createdAtIso) {
 }
 
 export async function removeSignup(dateStr, name) {
-  if (useKV) {
-    await kv.srem(keySignups(dateStr), name);
+  const b = await ensureBackend();
+  if (b.kind === 'kv') {
+    await kvClient.srem(keySignups(dateStr), name);
     return;
   }
   sqliteDb
@@ -57,8 +71,9 @@ export async function removeSignup(dateStr, name) {
 }
 
 export async function getPasscode() {
-  if (useKV) {
-    const val = await kv.get(keyPasscode);
+  const b = await ensureBackend();
+  if (b.kind === 'kv') {
+    const val = await kvClient.get(keyPasscode);
     return val || '0000';
   }
   const row = sqliteDb.prepare('SELECT value FROM settings WHERE key = ?').get('passcode');
@@ -66,8 +81,9 @@ export async function getPasscode() {
 }
 
 export async function setPasscode(next) {
-  if (useKV) {
-    await kv.set(keyPasscode, next);
+  const b = await ensureBackend();
+  if (b.kind === 'kv') {
+    await kvClient.set(keyPasscode, next);
     return;
   }
   sqliteDb
