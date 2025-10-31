@@ -1,0 +1,14 @@
+{
+  "functions": {
+    "api/index.js": {
+      "includeFiles": ["views/**", "public/**"]
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api"
+    }
+  ]
+}
+
